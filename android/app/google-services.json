@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "811981988193",
+    "project_id": "career-app-prod-dh",
+    "storage_bucket": "career-app-prod-dh.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:811981988193:android:44205cda05d19702446520",
+        "android_client_info": {
+          "package_name": "com.yourorg.careerapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCz8s7EnYvGE0xYdLwLNbAVdNW6uIhUQFo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

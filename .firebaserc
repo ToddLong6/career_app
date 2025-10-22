@@ -1,0 +1,18 @@
+{
+  "projects": {
+    "default": "career-app-dev-dh",
+    "prod": "career-app-prod-dh"
+  },
+  "targets": {
+    "career-app-dev-dh": {
+      "hosting": {
+        "dev": ["career-app-web-dev-dh"]
+      }
+    },
+    "career-app-prod-dh": {
+      "hosting": {
+        "prod": ["career-app-web-dh"]
+      }
+    }
+  }
+}
