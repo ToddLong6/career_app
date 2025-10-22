@@ -10,6 +10,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+
     steps:
       - uses: actions/checkout@v4
 
@@ -17,34 +18,37 @@ jobs:
         with:
           channel: stable
 
-      - name: Build web (dev)
+      - name: Pub get + build web (dev)
         run: |
           flutter pub get
           flutter build web -t lib/main_dev.dart
 
-      - name: Install Firebase CLI
-        run: npm i -g firebase-tools
+      - name: Install Node + Firebase CLI
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm i -g firebase-tools
 
       - name: Auth to Firebase (dev)
         env:
           FIREBASE_SERVICE_ACCOUNT_DEV: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_DEV }}
         run: |
           echo "$FIREBASE_SERVICE_ACCOUNT_DEV" > $HOME/sa.json
-          export GOOGLE_APPLICATION_CREDENTIALS="$HOME/sa.json"
-          # sanity check the creds
-          firebase projects:list > /dev/null
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$HOME/sa.json" >> $GITHUB_ENV
+          firebase --project career-app-dev-dh projects:list > /dev/null
 
       - name: Deploy preview channel (dev site)
         id: deploy
         run: |
           PRNUM=${{ github.event.number }}
-          firebase hosting:channel:deploy pr-$PRNUM \
+          # Deploy and capture stdout
+          OUT=$(firebase hosting:channel:deploy pr-$PRNUM \
             --project career-app-dev-dh \
             --only hosting:career-app-web-dev-dh \
-            --expires 7d \
-            --json > out.json
-          # grab URL
-          URL=$(node -e "const d=require('./out.json'); const r=d.result?.find(x=>x?.result?.hosting?.deploys?.length); const u=r?.result?.hosting?.deploys?.[0]?.urls?.[0]||''; console.log(u);")
+            --expires 7d)
+          echo "$OUT"
+          # Extract the first URL that looks like a web.app/app
+          URL=$(echo "$OUT" | grep -Eo 'https?://[^ ]+\.web\.app[^ ]*|https?://[^ ]+\.firebaseapp\.com[^ ]*' | head -n1)
           echo "url=$URL" >> $GITHUB_OUTPUT
 
       - name: Comment preview URL
