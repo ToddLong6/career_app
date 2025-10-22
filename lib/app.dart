@@ -9,6 +9,7 @@ class CareerApp extends StatelessWidget {
       theme: ThemeData(useMaterial3: true),
       home: const Scaffold(
         body: Center(child: Text('Career App — M0 ready')),
+        backgroundColor: Colors.yellow,
       ),
     );
   }
