@@ -1,0 +1,38 @@
+name: Deploy Prod
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Build web (prod)
+        run: |
+          flutter pub get
+          flutter build web -t lib/main_prod.dart
+
+      - name: Install Firebase CLI
+        run: npm i -g firebase-tools
+
+      - name: Auth to Firebase (prod)
+        env:
+          FIREBASE_SERVICE_ACCOUNT_PROD: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_PROD }}
+        run: |
+          echo "$FIREBASE_SERVICE_ACCOUNT_PROD" > $HOME/sa.json
+          export GOOGLE_APPLICATION_CREDENTIALS="$HOME/sa.json"
+          firebase projects:list > /dev/null
+
+      - name: Deploy to production site
+        run: |
+          firebase deploy \
+            --project career-app-prod-dh \
+            --only hosting:career-app-web-dh
