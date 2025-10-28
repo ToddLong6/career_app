@@ -41,7 +41,6 @@ jobs:
           # Sanity check (non-zero size means we actually wrote the key)
           echo "Key size: $(wc -c < "$RUNNER_TEMP/sa.json") bytes"
           # Quick project call (will fail fast if creds/project mismatch)
-          firebase --project career-app-dev-dh projects:list > /dev/null
           firebase hosting:sites:list --project career-app-dev-dh > /dev/null
 
 
