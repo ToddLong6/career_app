@@ -42,10 +42,11 @@ jobs:
           echo "Key size: $(wc -c < "$RUNNER_TEMP/sa.json") bytes"
           # Quick project call (will fail fast if creds/project mismatch)
           firebase --project career-app-dev-dh projects:list > /dev/null
+          firebase hosting:sites:list --project career-app-dev-dh > /dev/null
 
 
       - name: Deploy preview channel (dev site)
-        id: deploy
+        id: deploys
         run: |
           PRNUM=${{ github.event.number }}
           # Deploy and capture stdout
