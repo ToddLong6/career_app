@@ -47,18 +47,27 @@ jobs:
         run: firebase hosting:sites:list --project career-app-dev-dh
   
       - name: Deploy preview channel (dev site)
-        id: deploys
+        env:
+          PRNUM: ${{ github.event.number }}
         run: |
-          PRNUM=${{ github.event.number }}
-          # Deploy and capture stdout
-          OUT=$(firebase hosting:channel:deploy pr-$PRNUM \
+          set -euo pipefail
+          echo "PRNUM=$PRNUM"
+          # sanity: ensure build output exists
+          ls -lah build/web || (echo "⚠️ build/web missing" && exit 1)
+          # show Firebase config it will use
+          cat firebase.json
+          cat .firebaserc || true
+      
+          # show CLI version
+          firebase --version
+      
+          # Deploy with full debug so we see the real error
+          firebase hosting:channel:deploy pr-$PRNUM \
             --project career-app-dev-dh \
             --only hosting:career-app-web-dev-dh \
-            --expires 7d)
-          echo "$OUT"
-          # Extract the first URL that looks like a web.app/app
-          URL=$(echo "$OUT" | grep -Eo 'https?://[^ ]+\.web\.app[^ ]*|https?://[^ ]+\.firebaseapp\.com[^ ]*' | head -n1)
-          echo "url=$URL" >> $GITHUB_OUTPUT
+            --expires 7d \
+            --debug
+      
 
       - name: Comment preview URL
         uses: marocchino/sticky-pull-request-comment@v2
