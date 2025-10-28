@@ -33,9 +33,16 @@ jobs:
         env:
           FIREBASE_SERVICE_ACCOUNT_DEV: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_DEV }}
         run: |
-          echo "$FIREBASE_SERVICE_ACCOUNT_DEV" > $HOME/sa.json
-          echo "GOOGLE_APPLICATION_CREDENTIALS=$HOME/sa.json" >> $GITHUB_ENV
+          # Write the JSON key safely
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT_DEV" > "$RUNNER_TEMP/sa.json"
+          # Make it available to THIS step and subsequent steps
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> $GITHUB_ENV
+          # Sanity check (non-zero size means we actually wrote the key)
+          echo "Key size: $(wc -c < "$RUNNER_TEMP/sa.json") bytes"
+          # Quick project call (will fail fast if creds/project mismatch)
           firebase --project career-app-dev-dh projects:list > /dev/null
+
 
       - name: Deploy preview channel (dev site)
         id: deploy

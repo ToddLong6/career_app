@@ -31,8 +31,10 @@ jobs:
         env:
           FIREBASE_SERVICE_ACCOUNT_PROD: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_PROD }}
         run: |
-          echo "$FIREBASE_SERVICE_ACCOUNT_PROD" > $HOME/sa.json
-          echo "GOOGLE_APPLICATION_CREDENTIALS=$HOME/sa.json" >> $GITHUB_ENV
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT_PROD" > "$RUNNER_TEMP/sa.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> $GITHUB_ENV
+          echo "Key size: $(wc -c < "$RUNNER_TEMP/sa.json") bytes"
           firebase --project career-app-prod-dh projects:list > /dev/null
 
       - name: Deploy to production site
