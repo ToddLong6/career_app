@@ -28,22 +28,24 @@ jobs:
         with:
           node-version: '20'
       - run: npm i -g firebase-tools
+      - name: Google Auth (DEV)
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_DEV }}
 
-      - name: Auth to Firebase (dev)
-        env:
-          FIREBASE_SERVICE_ACCOUNT_DEV: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_DEV }}
+      - name: Verify ADC
         run: |
-          # Write the JSON key safely
-          printf '%s' "$FIREBASE_SERVICE_ACCOUNT_DEV" > "$RUNNER_TEMP/sa.json"
-          # Make it available to THIS step and subsequent steps
-          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json"
-          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> $GITHUB_ENV
-          # Sanity check (non-zero size means we actually wrote the key)
-          echo "Key size: $(wc -c < "$RUNNER_TEMP/sa.json") bytes"
-          # Quick project call (will fail fast if creds/project mismatch)
-          firebase hosting:sites:list --project career-app-dev-dh > /dev/null
+          gcloud auth list
+          echo "ADC set? $(python - <<'PY'
+          import google.auth
+          creds, proj = google.auth.default()
+          print(bool(creds))
+          PY
+          )"
 
-
+      - name: Firebase sanity check (DEV)
+        run: firebase hosting:sites:list --project career-app-dev-dh
+  
       - name: Deploy preview channel (dev site)
         id: deploys
         run: |
