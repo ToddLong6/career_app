@@ -10,6 +10,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+      id-token: write   # needed by google-github-actions/auth
 
     steps:
       - uses: actions/checkout@v4
@@ -28,46 +29,40 @@ jobs:
         with:
           node-version: '20'
       - run: npm i -g firebase-tools
+
       - name: Google Auth (DEV)
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_DEV }}
 
-      - name: Verify ADC
-        run: |
-          gcloud auth list
-          echo "ADC set? $(python - <<'PY'
-          import google.auth
-          creds, proj = google.auth.default()
-          print(bool(creds))
-          PY
-          )"
-
       - name: Firebase sanity check (DEV)
         run: firebase hosting:sites:list --project career-app-dev-dh
-  
+
       - name: Deploy preview channel (dev site)
+        id: deploy
         env:
           PRNUM: ${{ github.event.number }}
         run: |
           set -euo pipefail
-          echo "PRNUM=$PRNUM"
-          # sanity: ensure build output exists
-          ls -lah build/web || (echo "⚠️ build/web missing" && exit 1)
-          # show Firebase config it will use
-          cat firebase.json
-          cat .firebaserc || true
-      
-          # show CLI version
+
+          # Sanity: ensure build output exists
+          test -d build/web || (echo "⚠️ build/web missing" && exit 1)
+
+          # Show CLI version
           firebase --version
-      
-          # Deploy with full debug so we see the real error
-          firebase hosting:channel:deploy pr-$PRNUM \
+
+          # Use --site (NOT --only). This targets the hosting site ID directly.
+          OUT="$(firebase hosting:channel:deploy pr-$PRNUM \
             --project career-app-dev-dh \
-            --only hosting:career-app-web-dev-dh \
+            --site career-app-web-dev-dh \
             --expires 7d \
-            --debug
-      
+            --json)"
+
+          echo "$OUT" > deploy_output.json
+          # Extract the first URL from the JSON safely
+          URL=$(node -e "const d=require('./deploy_output.json'); const urls=(d.result?.[0]?.result?.hosting?.deploys?.[0]?.urls)||[]; console.log(urls[0]||'');")
+          echo "url=$URL" >> $GITHUB_OUTPUT
+          echo "Preview URL: $URL"
 
       - name: Comment preview URL
         uses: marocchino/sticky-pull-request-comment@v2
@@ -75,15 +70,4 @@ jobs:
           message: |
             🚀 **Preview Ready**
             ${{ steps.deploy.outputs.url }}
-            
-      - name: Deploy preview channel (dev site)
-        env:
-          PRNUM: ${{ github.event.number }}
-        run: |
-          set -euo pipefail
-          firebase hosting:channel:deploy pr-$PRNUM \
-            --project career-app-dev-dh \
-            --site career-app-web-dev-dh \
-            --expires 7d \
-            --debug
-          
+      
