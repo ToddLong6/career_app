@@ -75,3 +75,15 @@ jobs:
           message: |
             🚀 **Preview Ready**
             ${{ steps.deploy.outputs.url }}
+            
+      - name: Deploy preview channel (dev site)
+        env:
+          PRNUM: ${{ github.event.number }}
+        run: |
+          set -euo pipefail
+          firebase hosting:channel:deploy pr-$PRNUM \
+            --project career-app-dev-dh \
+            --site career-app-web-dev-dh \
+            --expires 7d \
+            --debug
+          
