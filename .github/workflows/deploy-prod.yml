@@ -8,6 +8,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
@@ -15,21 +16,34 @@ jobs:
         with:
           channel: stable
 
-      - name: Build web (prod)
+      - name: Pub get + build web (prod)
         run: |
           flutter pub get
           flutter build web -t lib/main_prod.dart
 
-      - name: Install Firebase CLI
-        run: npm i -g firebase-tools
+      - name: Install Node + Firebase CLI
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm i -g firebase-tools
 
-      - name: Auth to Firebase (prod)
-        env:
-          FIREBASE_SERVICE_ACCOUNT_PROD: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_PROD }}
+      - name: Google Auth (DEV)
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_PROD }}
+
+      - name: Verify ADC
         run: |
-          echo "$FIREBASE_SERVICE_ACCOUNT_PROD" > $HOME/sa.json
-          export GOOGLE_APPLICATION_CREDENTIALS="$HOME/sa.json"
-          firebase projects:list > /dev/null
+          gcloud auth list
+          echo "ADC set? $(python - <<'PY'
+          import google.auth
+          creds, proj = google.auth.default()
+          print(bool(creds))
+          PY
+          )"
+          
+      - name: Firebase sanity check (prod)
+        run: firebase hosting:sites:list --project career-app-prod-dh
 
       - name: Deploy to production site
         run: |

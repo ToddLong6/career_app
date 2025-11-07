@@ -10,6 +10,8 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+      id-token: write   # needed by google-github-actions/auth
+
     steps:
       - uses: actions/checkout@v4
 
@@ -17,35 +19,54 @@ jobs:
         with:
           channel: stable
 
-      - name: Build web (dev)
+      - name: Pub get + build web (dev)
         run: |
           flutter pub get
           flutter build web -t lib/main_dev.dart
 
-      - name: Install Firebase CLI
-        run: npm i -g firebase-tools
+      - name: Install Node + Firebase CLI
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: |
+          npm install -g firebase-tools@latest
+          firebase --version
 
-      - name: Auth to Firebase (dev)
-        env:
-          FIREBASE_SERVICE_ACCOUNT_DEV: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_DEV }}
-        run: |
-          echo "$FIREBASE_SERVICE_ACCOUNT_DEV" > $HOME/sa.json
-          export GOOGLE_APPLICATION_CREDENTIALS="$HOME/sa.json"
-          # sanity check the creds
-          firebase projects:list > /dev/null
+      - name: Google Auth (DEV)
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_DEV }}
+
+      - name: Firebase sanity check (DEV)
+        run: firebase hosting:sites:list --project career-app-dev-dh
 
       - name: Deploy preview channel (dev site)
         id: deploy
+        env:
+          PRNUM: ${{ github.event.number }}
         run: |
-          PRNUM=${{ github.event.number }}
-          firebase hosting:channel:deploy pr-$PRNUM \
+          set -euo pipefail
+
+          # Sanity: ensure build output exists
+          test -d build/web || (echo "⚠️ build/web missing" && exit 1)
+
+          # Show CLI version
+          firebase --version
+
+          CHANNEL="pr-$PRNUM"
+          CONFIG="firebase.preview.json"
+
+          OUT="$(firebase hosting:channel:deploy "$CHANNEL" \
             --project career-app-dev-dh \
-            --only hosting:career-app-web-dev-dh \
+            --config "$CONFIG" \
             --expires 7d \
-            --json > out.json
-          # grab URL
-          URL=$(node -e "const d=require('./out.json'); const r=d.result?.find(x=>x?.result?.hosting?.deploys?.length); const u=r?.result?.hosting?.deploys?.[0]?.urls?.[0]||''; console.log(u);")
+            --json)"
+
+          echo "$OUT" > deploy_output.json
+          # Extract the first URL from the JSON safely
+          URL=$(node -e "const d=require('./deploy_output.json'); const urls=(d.result?.[0]?.result?.hosting?.deploys?.[0]?.urls)||[]; console.log(urls[0]||'');")
           echo "url=$URL" >> $GITHUB_OUTPUT
+          echo "Preview URL: $URL"
 
       - name: Comment preview URL
         uses: marocchino/sticky-pull-request-comment@v2
@@ -53,3 +74,4 @@ jobs:
           message: |
             🚀 **Preview Ready**
             ${{ steps.deploy.outputs.url }}
+      
