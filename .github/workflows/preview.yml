@@ -73,62 +73,62 @@ jobs:
 
           # Extract URL from deploy/channel JSON (covers new + legacy CLI formats)
           URL=$(CHANNEL="$CHANNEL" node -e "
-const fs = require('fs');
-const channelId = process.env.CHANNEL || '';
-const candidates = [];
-const add = (val) => { if (val) candidates.push(val); };
-const firstMatch = (text) => {
-  const match = text.match(/https?:\\/\\/[^\\s\"']+/);
-  return match ? match[0] : '';
-};
+          const fs = require('fs');
+          const channelId = process.env.CHANNEL || '';
+          const candidates = [];
+          const add = (val) => { if (val) candidates.push(val); };
+          const firstMatch = (text) => {
+            const match = text.match(/https?:\\/\\/[^\\s\"']+/);
+            return match ? match[0] : '';
+          };
 
-const tryFile = (path, fnText, fnJson) => {
-  if (!fs.existsSync(path)) return;
-  const text = fs.readFileSync(path, 'utf8');
-  if (fnText) add(fnText(text));
-  if (fnJson) {
-    try {
-      const data = JSON.parse(text);
-      add(fnJson(data));
-    } catch (_) {}
-  }
-};
+          const tryFile = (path, fnText, fnJson) => {
+            if (!fs.existsSync(path)) return;
+            const text = fs.readFileSync(path, 'utf8');
+            if (fnText) add(fnText(text));
+            if (fnJson) {
+              try {
+                const data = JSON.parse(text);
+                add(fnJson(data));
+              } catch (_) {}
+            }
+          };
 
-const extractDeploy = (data) => {
-  const r = data?.result?.[0]?.result;
-  const hosting = r?.hosting;
-  add(hosting?.deploys?.[0]?.urls?.[0]);
-  add(hosting?.deploys?.[0]?.url);
-  add(hosting?.preview?.url);
-  add(hosting?.url);
-  add(r?.channel?.url);
-  add(data?.channel?.url);
-  add(data?.url);
-  return null;
-};
+          const extractDeploy = (data) => {
+            const r = data?.result?.[0]?.result;
+            const hosting = r?.hosting;
+            add(hosting?.deploys?.[0]?.urls?.[0]);
+            add(hosting?.deploys?.[0]?.url);
+            add(hosting?.preview?.url);
+            add(hosting?.url);
+            add(r?.channel?.url);
+            add(data?.channel?.url);
+            add(data?.url);
+            return null;
+          };
 
-const extractList = (data) => {
-  const entries = data?.result?.channels || data?.channels || [];
-  const match = entries.find((c) => {
-    if (!c) return false;
-    if (c.id && c.id === channelId) return true;
-    if (c.channelId && c.channelId === channelId) return true;
-    if (c.name && channelId && c.name.endsWith(`/channels/${channelId}`)) return true;
-    return false;
-  });
-  if (match) {
-    add(match.url);
-    add(match.urls?.[0]);
-  }
-  return null;
-};
+          const extractList = (data) => {
+            const entries = data?.result?.channels || data?.channels || [];
+            const match = entries.find((c) => {
+              if (!c) return false;
+              if (c.id && c.id === channelId) return true;
+              if (c.channelId && c.channelId === channelId) return true;
+              if (c.name && channelId && c.name.endsWith(`/channels/${channelId}`)) return true;
+              return false;
+            });
+            if (match) {
+              add(match.url);
+              add(match.urls?.[0]);
+            }
+            return null;
+          };
 
-tryFile('deploy_output.json', firstMatch, extractDeploy);
-tryFile('channel_list.json', firstMatch, extractList);
+          tryFile('deploy_output.json', firstMatch, extractDeploy);
+          tryFile('channel_list.json', firstMatch, extractList);
 
-const url = candidates.find(Boolean) || '';
-console.log(url);
-")
+          const url = candidates.find(Boolean) || '';
+          console.log(url);
+          ")
           echo "url=$URL" >> $GITHUB_OUTPUT
           echo "Preview URL: $URL"
 
