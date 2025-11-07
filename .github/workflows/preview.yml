@@ -63,8 +63,31 @@ jobs:
             --json)"
 
           echo "$OUT" > deploy_output.json
-          # Extract the first URL from the JSON safely
-          URL=$(node -e "const d=require('./deploy_output.json'); const urls=(d.result?.[0]?.result?.hosting?.deploys?.[0]?.urls)||[]; console.log(urls[0]||'');")
+          # Extract URL from the JSON (covers multiple CLI formats, falls back to first https:// match)
+          URL=$(node -e "
+const fs = require('fs');
+const text = fs.readFileSync('deploy_output.json', 'utf8');
+let data;
+try { data = JSON.parse(text); } catch (_) { data = null; }
+const pick = (obj) => obj && obj.find(Boolean);
+const candidates = [];
+const push = (value) => { if (value) candidates.push(value); };
+if (data) {
+  push(data.result?.[0]?.result?.hosting?.deploys?.[0]?.urls?.[0]);
+  push(data.result?.[0]?.result?.hosting?.deploys?.[0]?.url);
+  push(data.result?.[0]?.result?.channel?.url);
+  push(data.result?.[0]?.result?.hosting?.preview?.url);
+  push(data.result?.[0]?.result?.hosting?.url);
+  push(data.channel?.url);
+  push(data.url);
+}
+let url = candidates.find(Boolean);
+if (!url) {
+  const match = text.match(/https?:\\/\\/[^\\s\"']+/);
+  url = match ? match[0] : '';
+}
+console.log(url || '');
+")
           echo "url=$URL" >> $GITHUB_OUTPUT
           echo "Preview URL: $URL"
 
