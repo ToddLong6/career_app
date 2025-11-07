@@ -56,18 +56,21 @@ jobs:
           CHANNEL="pr-$PRNUM"
           SITE="career-app-web-dev-dh"
 
-          BASE_CMD=(firebase hosting:channel:deploy "$CHANNEL" \
-            --project career-app-dev-dh \
-            --expires 7d \
-            --json)
+          DEPLOY_CMD=(firebase hosting:channel:deploy "$CHANNEL")
 
           if firebase hosting:channel:deploy --help 2>&1 | grep -q -- '--site'; then
             echo "Using Firebase CLI --site flag for preview deploy."
-            DEPLOY_CMD=("${BASE_CMD[@]}" --site "$SITE")
+            DEPLOY_CMD+=("--site" "$SITE")
           else
-            echo "Firebase CLI missing --site flag; falling back to --only hosting:$SITE."
-            DEPLOY_CMD=("${BASE_CMD[@]}" --only "hosting:$SITE")
+            echo "Firebase CLI missing --site flag; passing site as positional arg."
+            DEPLOY_CMD+=("$SITE")
           fi
+
+          DEPLOY_CMD+=(
+            --project career-app-dev-dh
+            --expires 7d
+            --json
+          )
 
           OUT="$("${DEPLOY_CMD[@]}")"
 
