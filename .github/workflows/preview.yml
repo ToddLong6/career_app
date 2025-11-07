@@ -53,10 +53,9 @@ jobs:
           # Show CLI version
           firebase --version
 
-          # Use --site (NOT --only). This targets the hosting site ID directly.
-          OUT="$(firebase hosting:channel:deploy pr-$PRNUM \
+          # Pass the site ID as the second positional arg (avoids --site flag issues).
+          OUT="$(firebase hosting:channel:deploy pr-$PRNUM career-app-web-dev-dh \
             --project career-app-dev-dh \
-            --site career-app-web-dev-dh \
             --expires 7d \
             --json)"
 
