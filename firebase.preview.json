@@ -1,0 +1,16 @@
+{
+  "hosting": [
+    {
+      "site": "career-app-web-dev-dh",
+      "public": "build/web",
+      "ignore": ["**/.*", "**/node_modules/**"],
+      "cleanUrls": true,
+      "headers": [
+        {
+          "source": "**/*.html",
+          "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+        }
+      ]
+    }
+  ]
+}

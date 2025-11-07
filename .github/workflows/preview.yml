@@ -54,19 +54,13 @@ jobs:
           firebase --version
 
           CHANNEL="pr-$PRNUM"
-          SITE="career-app-web-dev-dh"
+          CONFIG="firebase.preview.json"
 
-          if firebase hosting:channel:deploy --help 2>&1 | grep -q -- '--site'; then
-            echo "Using Firebase CLI --site flag for preview deploy."
-            DEPLOY_CMD=(firebase hosting:channel:deploy "$CHANNEL" --site "$SITE")
-          else
-            echo "Firebase CLI missing --site flag; passing site as positional arg."
-            DEPLOY_CMD=(firebase hosting:channel:deploy "$CHANNEL" "$SITE")
-          fi
-
-          DEPLOY_CMD+=(--project career-app-dev-dh --expires 7d --json)
-
-          OUT="$("${DEPLOY_CMD[@]}")"
+          OUT="$(firebase hosting:channel:deploy "$CHANNEL" \
+            --project career-app-dev-dh \
+            --config "$CONFIG" \
+            --expires 7d \
+            --json)"
 
           echo "$OUT" > deploy_output.json
           # Extract the first URL from the JSON safely

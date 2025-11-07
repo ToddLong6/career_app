@@ -23,6 +23,7 @@ migrate_working_dir/
 # is commented out by default.
 #.vscode/
 *.json
+!firebase.preview.json
 *.secret
 sa-*.json
 
